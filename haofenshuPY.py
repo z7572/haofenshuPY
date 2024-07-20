@@ -48,7 +48,7 @@ class LoginDialog(wx.Dialog):
             if token:
                 student_name = self.get_student_name(token)
                 self.MainFrame.update_token(token, roleType)
-                self.MainFrame.update_choice(student_name)
+                self.MainFrame.update_choiceUser(student_name)
                 wx.MessageBox(f"Msg: {msg}\nToken: {token}", "提示", wx.OK | wx.ICON_INFORMATION)
                 self.Close()
             else:
@@ -226,11 +226,12 @@ class MainFrame(wx.Frame):
     def update_choiceUser(self,student_name=None):
         self.choiceUser.Clear()
         student_names = self.load_student_names()
-        self.choiceUser.AppendItems("未选择" + student_names)
+        self.choiceUser.AppendItems(student_names)
         if student_name:
             index = self.choiceUser.FindString(student_name)
             if index != wx.NOT_FOUND:
                 self.choiceUser.SetSelection(index)
+                self.OnChoiceUser(None)
         
     def OnChoiceUser(self, event):
         if self.choiceUser.GetStringSelection() != "未选择":
