@@ -22,6 +22,10 @@
    "value": "./res/icon.ico"
   },
   {
+   "optionDest": "name",
+   "value": "\u574f\u5206\u6570"
+  },
+  {
    "optionDest": "clean_build",
    "value": false
   },
