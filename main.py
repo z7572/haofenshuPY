@@ -105,14 +105,14 @@ class LoginDialog(wx.Dialog):
         
 class MainFrame(wx.Frame):
     def __init__(self,parent):
-        super(MainFrame, self).__init__(parent, title="好分数PY", size=(800, 600))
+        super(MainFrame, self).__init__(parent, title="坏分数", size=(800, 600))
         
         self.token = None
         self.roleType = None
         self.response_data = None
         self.examId = []
         self.selectedExamId = None
-
+        self.SetIcon(wx.Icon("res/icon.ico"))
         self.InitUI()
         self.Centre()
         

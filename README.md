@@ -23,9 +23,11 @@
 需要Python环境
 ``` 
 pip install requests wxpython
-python hanfenshuPY.py
+python main.py
 ```
 
 ## 使用打包后的版本
+
+> 本项目使用 [`auto-py-to-exe`](https://blog.csdn.net/qq_40836442/article/details/139061604 "参考资料") 打包
 
 无需配置环境，下载release中的exe文件并运行即可
