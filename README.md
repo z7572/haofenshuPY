@@ -32,4 +32,4 @@ python main.py
 
 > 本项目使用 [`auto-py-to-exe`](https://blog.csdn.net/qq_40836442/article/details/139061604 "参考资料") 打包
 
-无需配置环境，下载release中的exe文件并运行即可
+无需配置环境，下载[release](https://github.com/z7572/haofenshuPY/releases/)中的exe文件并运行即可
