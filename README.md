@@ -1,4 +1,6 @@
-# haofenshuPY
+# 坏  分  数 | haofenshuPY
+
+## 简介
 
 基于wxpython的一个好分数查分用户界面
 
