@@ -120,7 +120,7 @@ class MainFrame(wx.Frame):
         self.roleType = None
         self.res = None
         self.examId = []
-        self.selectedExamId = None
+        self.selected_examId = None
         self.isListAll = False
         
         self.InitUI()
@@ -132,47 +132,48 @@ class MainFrame(wx.Frame):
         # --------左面板--------
         self.left_panel = wx.ScrolledCanvas(splitter)
         wx.ScrolledCanvas.SetScrollRate(self.left_panel, 5, 5)
-        grid_left = wx.GridBagSizer(5, 5)
+        self.grid_left = wx.GridBagSizer(5, 5)
         
         login_button = wx.Button(self.left_panel, label="登录")
         login_button.Bind(wx.EVT_BUTTON, self.OnLogin)
-        grid_left.Add(login_button, pos=(0, 0), flag=wx.TOP | wx.LEFT, border=10)
+        self.grid_left.Add(login_button, pos=(0, 0), flag=wx.TOP | wx.LEFT, border=10)
         
         st = wx.StaticText(self.left_panel, label="当前登录账号:")
-        grid_left.Add(st, pos=(0, 1), flag=wx.TOP | wx.ALIGN_RIGHT, border=15)
+        self.grid_left.Add(st, pos=(0, 1), flag=wx.TOP | wx.ALIGN_RIGHT, border=15)
         
         self.choiceUser = wx.Choice(self.left_panel, choices=["未选择"] + self.load_student_names())
         self.choiceUser.SetSelection(0)  # 默认选择“未选择”
         self.choiceUser.Bind(wx.EVT_CHOICE, self.OnChoiceUser)
-        grid_left.Add(self.choiceUser, (0, 2), (1, 2), flag=wx.EXPAND | wx.TOP, border=10)
+        self.grid_left.Add(self.choiceUser, (0, 2), (1, 2), flag=wx.EXPAND | wx.TOP, border=10)
         
         list_btn = wx.Button(self.left_panel, label="查看考试列表")
         list_btn.Bind(wx.EVT_BUTTON, self.OnGetExamList)
-        grid_left.Add(list_btn, (0, 4), flag=wx.TOP | wx.LEFT, border=10)
+        self.grid_left.Add(list_btn, (0, 4), flag=wx.TOP | wx.LEFT, border=10)
         
         list_all_choice = wx.CheckBox(self.left_panel, label="查看所有", style=wx.ALIGN_RIGHT)
         list_all_choice.Bind(wx.EVT_CHECKBOX, self.OnSwitchListAll)
-        grid_left.Add(list_all_choice, (0, 5), flag=wx.TOP, border=15)
+        self.grid_left.Add(list_all_choice, (0, 5), flag=wx.TOP, border=15)
         
-        self.choiceExam = wx.Choice(self.left_panel, choices=["未选择"])
+        self.choiceExam = wx.Choice(self.left_panel, choices=["未选择"], size=(108, 30))
         self.choiceExam.SetSelection(0)
         self.choiceExam.Bind(wx.EVT_CHOICE, self.OnChoiceExam)
-        grid_left.Add(self.choiceExam, (1, 0), (1, 3), flag=wx.EXPAND | wx.LEFT, border=10)
+        self.grid_left.Add(self.choiceExam, (1, 0), (1, 3), flag=wx.EXPAND | wx.LEFT, border=10)
         
         self.rankinfoBtn = wx.Button(self.left_panel, label="查看排名信息")
         self.rankinfoBtn.Bind(wx.EVT_BUTTON, self.OnGetRankInfo)
-        grid_left.Add(self.rankinfoBtn, (1, 3), flag=wx.LEFT, border=10)
+        self.grid_left.Add(self.rankinfoBtn, (1, 3), flag=wx.LEFT, border=10)
         
         self.overviewBtn = wx.Button(self.left_panel, label="查看成绩概览")
         self.overviewBtn.Bind(wx.EVT_BUTTON, self.OnGetOverview)
-        grid_left.Add(self.overviewBtn, (1, 4), flag=wx.LEFT, border=10)
+        self.grid_left.Add(self.overviewBtn, (1, 4), flag=wx.LEFT, border=10)
         
         # --------信息面板--------
-        self.info_panel = wx.ScrolledCanvas(self.left_panel)
-        grid_left.Add(self.info_panel, (2, 0), (5, 5), flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border=10)
+        self.info_panel = wx.Panel(self.left_panel)
+        self.grid_left.Add(self.info_panel, (2, 0), (5, 6), flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border=10)
+        self.grid_left.AddGrowableRow(2)
+        self.grid_left.AddGrowableCol(1)
+        self.left_panel.SetSizerAndFit(self.grid_left)
         
-        self.left_panel.SetSizerAndFit(grid_left)
-        grid_left.AddGrowableRow(2)
         
         # --------右面板--------
         self.right_panel = wx.Panel(splitter)
@@ -203,6 +204,9 @@ class MainFrame(wx.Frame):
         self.tc.SetFocus()
     def OnUnFocus(self, event):
         self.left_panel.SetFocus()
+    def OnSize(self, event):
+        self.list_ctrl.SetSize((self.info_panel.GetSize()[0] - 20, self.info_panel.GetSize()[1] - 30 - 5 * 30))
+        self.Layout()
     
     def OnWrap(self, event):
         value = self.tc.GetValue()
@@ -332,9 +336,11 @@ class MainFrame(wx.Frame):
         self.GetExamList(event)
         
     def OnChoiceExam(self, event):
+        '''选择考试并解析json数据'''
         if self.choiceExam.GetStringSelection() == "未选择":
             return
-        self.selectedExamId = self.examId[self.choiceExam.GetSelection()]
+        self.selected_examId = self.examId[self.choiceExam.GetSelection()]
+        examId = self.selected_examId
         self.Clear(self.info_panel)
         self.OnGetRankInfo(event, False)
         data = self.res["data"]
@@ -354,48 +360,91 @@ class MainFrame(wx.Frame):
         length_papers = len(papers)
         
         data_list = [
-                (f"班级排名:{rank_class}/{number_class}"),
-                (f"级部排名：{rank_grade}/{number_grade}"),
+                (f"班名:{rank_class}/{number_class}"),
+                (f"级名：{rank_grade}/{number_grade}"),
                 (f"总分：{score}/{fullscore}"),
-                (f"最高分：{highest_class} | {highest_grade}"),
-                (f"平均分：{avg_class} | {avg_grade}"),
+                (f"班|级最高：{highest_class} | {highest_grade}"),
+                (f"班|级平均：{avg_class} | {avg_grade}"),
                 ("")
             ]
         
         grade_list = []
         subject_order = ["语文", "数学", "英语", "物理", "化学", "生物", "政治", "历史", "地理"]
         for i in range(length_papers): # 各科成绩
+            paperId = str(papers[i]["paperId"])
             subject_name = str(papers[i]["subject"])
-            paper_score = str(papers[i]["score"])
-            paper_fullscore = str(papers[i]["manfen"])
+            subject_score = str(papers[i]["score"])
+            subject_fullscore = str(papers[i]["manfen"])
+            self.GET(f"https://hfs-be.yunxiao.com/v3/exam/{examId}/papers/{paperId}/rank-info", False)
+            subject_highest_class = str(self.res["data"]["highest"]["class"])
+            subject_highest_grade = str(self.res["data"]["highest"]["grade"])
+            subject_avg_class = str(self.res["data"]["avg"]["class"])
+            subject_avg_grade = str(self.res["data"]["avg"]["grade"])
+            subject_rank_class = str(self.res["data"]["rank"]["class"])
+            subject_rank_grade = str(self.res["data"]["rank"]["grade"])
+            subject_number_class = str(self.res["data"]["number"]["class"])
+            subject_number_grade = str(self.res["data"]["number"]["grade"])
             
             # 使用模糊匹配找到最接近的学科名（如果学科名异常的话）
             closest_match = difflib.get_close_matches(subject_name, subject_order, n=1, cutoff=0.6)
-            if closest_match:
-                subject_name = closest_match[0]
-                
-            grade_list.append((f"{subject_name}: {paper_score}/{paper_fullscore}"))
-        grade_list.sort(key=lambda x: subject_order.index(x.split(":")[0].strip()))
-        data_list.extend(grade_list)
+            match_name = closest_match[0] if closest_match else subject_name 
+            grade_list.append((
+                match_name, 
+                f"{subject_score}/{subject_fullscore}",
+                f"{subject_rank_class}/{subject_number_class}",
+                f"{subject_rank_grade}/{subject_number_grade}",
+                f"{subject_highest_class}",
+                f"{subject_highest_grade}",
+                f"{subject_avg_class}",
+                f"{subject_avg_grade}"
+                )) # (科目,分数,班名,级名,班最高,级最高,班平均,级平均)
+            
+        grade_list.sort(key=lambda x: subject_order.index(x[0])) # 按照subject_order排序
         
         for i, text in enumerate(data_list): # 显示信息
             st = wx.StaticText(self.info_panel, -1, text, pos=(10, 10 + i * 30))
             st.SetFont(wx.Font(20, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
-            
+
+        self.list_ctrl = wx.ListCtrl(self.info_panel, style=wx.LC_REPORT, pos=(10, 10 + i * 30 + 10))
+        self.list_ctrl.SetSize((self.info_panel.GetSize()[0] - 20, self.info_panel.GetSize()[1] - 20 - i * 30 - 10))
+        # 添加列
+        self.list_ctrl.InsertColumn(0, "科目")
+        self.list_ctrl.InsertColumn(1, "分数")
+        self.list_ctrl.InsertColumn(2, "班名")
+        self.list_ctrl.InsertColumn(3, "级名")
+        self.list_ctrl.InsertColumn(4, "班最高")
+        self.list_ctrl.InsertColumn(5, "级最高")
+        self.list_ctrl.InsertColumn(6, "班平均")
+        self.list_ctrl.InsertColumn(7, "级平均")
+        
+        # 添加行数据
+        for subject, score, rank_class, rank_grade, highest_class, highest_grade, avg_class, avg_grade in grade_list:
+            index = self.list_ctrl.InsertItem(self.list_ctrl.GetItemCount(), subject)
+            self.list_ctrl.SetItem(index, 1, score)
+            self.list_ctrl.SetItem(index, 2, rank_class)
+            self.list_ctrl.SetItem(index, 3, rank_grade)
+            self.list_ctrl.SetItem(index, 4, highest_class)
+            self.list_ctrl.SetItem(index, 5, highest_grade)
+            self.list_ctrl.SetItem(index, 6, avg_class)
+            self.list_ctrl.SetItem(index, 7, avg_grade)
+            self.list_ctrl.SetColumnWidth(index, wx.LIST_AUTOSIZE_USEHEADER)
+        self.Bind(wx.EVT_SIZING, self.OnSize)
+        self.info_panel.Layout()
+        
     def OnGetRankInfo(self, event, IsResbody:bool = True):
-        id = self.selectedExamId
+        id = self.selected_examId
         url = f"https://hfs-be.yunxiao.com/v3/exam/{id}/rank-info"
         self.GET(url, IsResbody)
         
     def OnGetOverview(self, event, IsResbody:bool = True):
-        id = self.selectedExamId
+        id = self.selected_examId
         url = f"https://hfs-be.yunxiao.com/v3/exam/{id}/overview"
         self.GET(url, IsResbody)
         
     def Clear(self, panel:wx.Panel):
         for child in panel.GetChildren():
             child.Destroy()
-    
+        panel.Layout()
     
     
 app = wx.App()
