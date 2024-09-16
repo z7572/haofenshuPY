@@ -3,6 +3,8 @@ import requests
 import json
 import base64
 import tempfile
+import difflib
+from collections import defaultdict
 
 
 
@@ -116,9 +118,10 @@ class MainFrame(wx.Frame):
         
         self.token = None
         self.roleType = None
-        self.response_data = None
+        self.res = None
         self.examId = []
         self.selectedExamId = None
+        self.isListAll = False
         
         self.InitUI()
         self.Centre()
@@ -126,7 +129,7 @@ class MainFrame(wx.Frame):
     def InitUI(self):
         splitter = wx.SplitterWindow(self)
         
-        # 左面板
+        # --------左面板--------
         self.left_panel = wx.ScrolledCanvas(splitter)
         wx.ScrolledCanvas.SetScrollRate(self.left_panel, 5, 5)
         grid_left = wx.GridBagSizer(5, 5)
@@ -147,6 +150,10 @@ class MainFrame(wx.Frame):
         list_btn.Bind(wx.EVT_BUTTON, self.OnGetExamList)
         grid_left.Add(list_btn, (0, 4), flag=wx.TOP | wx.LEFT, border=10)
         
+        list_all_choice = wx.CheckBox(self.left_panel, label="查看所有", style=wx.ALIGN_RIGHT)
+        list_all_choice.Bind(wx.EVT_CHECKBOX, self.OnSwitchListAll)
+        grid_left.Add(list_all_choice, (0, 5), flag=wx.TOP, border=15)
+        
         self.choiceExam = wx.Choice(self.left_panel, choices=["未选择"])
         self.choiceExam.SetSelection(0)
         self.choiceExam.Bind(wx.EVT_CHOICE, self.OnChoiceExam)
@@ -160,14 +167,14 @@ class MainFrame(wx.Frame):
         self.overviewBtn.Bind(wx.EVT_BUTTON, self.OnGetOverview)
         grid_left.Add(self.overviewBtn, (1, 4), flag=wx.LEFT, border=10)
         
-        # 信息面板
+        # --------信息面板--------
         self.info_panel = wx.ScrolledCanvas(self.left_panel)
         grid_left.Add(self.info_panel, (2, 0), (5, 5), flag=wx.EXPAND | wx.LEFT | wx.RIGHT | wx.BOTTOM, border=10)
         
         self.left_panel.SetSizerAndFit(grid_left)
         grid_left.AddGrowableRow(2)
         
-        # 右面板
+        # --------右面板--------
         self.right_panel = wx.Panel(splitter)
         self.grid_right = wx.GridBagSizer(5, 5)
         
@@ -197,7 +204,7 @@ class MainFrame(wx.Frame):
     def OnUnFocus(self, event):
         self.left_panel.SetFocus()
     
-    def OnWrap(self, event): # 代码复用真的是太方便了口牙！
+    def OnWrap(self, event):
         value = self.tc.GetValue()
         current_style = self.tc.GetWindowStyleFlag()
         if current_style & wx.TE_DONTWRAP:
@@ -256,23 +263,24 @@ class MainFrame(wx.Frame):
         self.token = token
         self.roleType = roleType
 
-    def GET(self, url , resbody:bool = False):
+    def GET(self, url , isShowResbody:bool = False):
         """
         向url发送GET请求
-        输入: (请求url,是否把响应体写入文本框)
+        输入: 请求url, 是否把响应体写入文本框
         输出: self.res = response.json()
         """
         headers = {
             "Cookie": f"hfs-session-id={self.token}"
         }
+
         try:
             response = requests.get(url, headers=headers)
             self.res = response.json()
-            if resbody:
+            if isShowResbody:
                 formatted_json = json.dumps(self.res, indent=4, ensure_ascii=False)
                 self.tc.SetValue(formatted_json)
         except requests.exceptions.RequestException as e:
-            if resbody:
+            if isShowResbody:
                 self.tc.SetValue(f"请求失败：\n{e}")
         
     def GetExamList(self, event):
@@ -280,21 +288,48 @@ class MainFrame(wx.Frame):
         self.choiceExam.Clear()
         self.examId = []
         select = self.choiceExam.GetSelection()
-        for i in range(len(self.res["data"]["list"])):
-            self.examId.append(self.res["data"]["list"][i]["examId"])
-            self.choiceExam.AppendItems(str(self.res["data"]["list"][i]["name"]))
-        if select != wx.NOT_FOUND:
-            self.choiceExam.SetSelection(select)
-        else:
-            self.choiceExam.SetSelection(0)
-        self.OnChoiceExam(event)
-    
+        if not self.isListAll: # 常规处理
+            for i in range(len(self.res["data"]["list"])):
+                self.examId.append(self.res["data"]["list"][i]["examId"])
+                self.choiceExam.AppendItems(str(self.res["data"]["list"][i]["name"]))
+            if select != wx.NOT_FOUND:
+                self.choiceExam.SetSelection(select)
+            else:
+                self.choiceExam.SetSelection(0)
+                self.OnChoiceExam(event)
+        else: # 调用导出错题api（获取学科信息）
+            if self.choiceUser.GetStringSelection() == "未选择":
+                return
+            subject_data = self.res
+            exam_dict = defaultdict(list) # 用于存储按考试名称合并的 examId
+            for subject in subject_data['data']: # 遍历所有科目，收集 examName 和 examId
+                for exam in subject['examList']:
+                    exam_dict[exam['examName']].append(exam['examId'])
+            sorted_exam_dict = {name: sorted(ids, key=int, reverse=True) # 按照 examId 倒序排序
+                for name, ids in sorted(exam_dict.items(), key=lambda x: min(map(int, x[1])), reverse=True)}
+
+            result = list(sorted_exam_dict.items()) # [(examName, [examId, examId, ...]), ...]
+            for name, ids in result:
+                self.examId.append(ids[0])
+                self.choiceExam.AppendItems(name)
+            if select != wx.NOT_FOUND:
+                self.choiceExam.SetSelection(select)
+            else:
+                self.choiceExam.SetSelection(0)
+                self.OnChoiceExam(event)
+                
     def OnGetExamList(self, event):
         if self.choiceUser.GetStringSelection() == "未选择":
             return
-        url = "https://hfs-be.yunxiao.com/v3/exam/list?start=0&limit=5"
+        if self.isListAll:
+            url = "https://hfs-be.yunxiao.com/v2/wrong-items/overview" # 导出错题api（获取学科信息）
+        else:
+            url = "https://hfs-be.yunxiao.com/v3/exam/list?start=0&limit=5"
         self.GET(url, True)
 
+    def OnSwitchListAll(self, event):
+        self.isListAll = not self.isListAll
+        self.GetExamList(event)
         
     def OnChoiceExam(self, event):
         if self.choiceExam.GetStringSelection() == "未选择":
@@ -326,13 +361,24 @@ class MainFrame(wx.Frame):
                 (f"平均分：{avg_class} | {avg_grade}"),
                 ("")
             ]
-        for i in range(length_papers):
+        
+        grade_list = []
+        subject_order = ["语文", "数学", "英语", "物理", "化学", "生物", "政治", "历史", "地理"]
+        for i in range(length_papers): # 各科成绩
             subject_name = str(papers[i]["subject"])
             paper_score = str(papers[i]["score"])
             paper_fullscore = str(papers[i]["manfen"])
-            data_list.append((f"{subject_name}: {paper_score}/{paper_fullscore}"))
+            
+            # 使用模糊匹配找到最接近的学科名（如果学科名异常的话）
+            closest_match = difflib.get_close_matches(subject_name, subject_order, n=1, cutoff=0.6)
+            if closest_match:
+                subject_name = closest_match[0]
+                
+            grade_list.append((f"{subject_name}: {paper_score}/{paper_fullscore}"))
+        grade_list.sort(key=lambda x: subject_order.index(x.split(":")[0].strip()))
+        data_list.extend(grade_list)
         
-        for i, text in enumerate(data_list):
+        for i, text in enumerate(data_list): # 显示信息
             st = wx.StaticText(self.info_panel, -1, text, pos=(10, 10 + i * 30))
             st.SetFont(wx.Font(20, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL))
             

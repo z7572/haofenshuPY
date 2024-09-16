@@ -1,5 +1,5 @@
 # personal file
-config.json
+*.json
 TODO.txt
 
 # executable
