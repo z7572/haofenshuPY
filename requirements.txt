@@ -1,3 +1,4 @@
 wxpython
 requests
 pywin32
+prettytable
