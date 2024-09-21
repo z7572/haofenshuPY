@@ -44,7 +44,7 @@ pip install -r requirements.txt
 ```
 运行`main.py`或`main-no-GUI.py`
 
-## 使用打包后的版本
+### 使用打包后的版本
 
 >本项目使用 `auto-py-to-exe` 打包 [*](https://blog.csdn.net/qq_40836442/article/details/139061604)
 
