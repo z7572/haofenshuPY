@@ -1,4 +1,9 @@
 # 坏  分  数 | haofenshuPY
+<p align="center">
+  <a href="https://github.com/z7572/haofenshuPY/releases/latest">
+    <img src="https://img.shields.io/github/downloads/z7572/haofenshuPY/total?label=Github%20downloads&logo=github">
+  </a>
+</p>
 
 ## 简介
 
