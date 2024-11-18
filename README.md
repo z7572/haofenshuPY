@@ -1,3 +1,5 @@
+## v3api失效，v4api解析中
+
 # 坏  分  数 | haofenshuPY
 <p align="center">
   <a href="https://github.com/z7572/haofenshuPY/releases/latest">
@@ -9,12 +11,6 @@
 
 一个好分数查分程序，包括基于wxpython的GUI版本(Windows) 和纯命令行版本(手机)
 
-> [!NOTE]
-> 因为好分数的网页版和客户端会因学校设置屏蔽一些内容，而且没有会员看不到大量信息
-> 
-> 但是，网络发送的请求api包括更多信息，可以通过抓包来查看，但这样还是不太方便
-> 
-> so，我编写了这个程序，通过使用好分数的api发送请求并解析，直观地显示信息
 
 ## 功能
 
@@ -29,11 +25,11 @@
 - 查询（支持总成绩和单科）
     - 分数
     - 班/级排名
-    - 班/级平均分
-    - 班/级最高分
+    ~~- 班/级平均分~~
+    ~~- 班/级最高分~~
 - 查看答题卡（右键所选科目）
 
-（后续会增加单个账号切换绑定学生的功能）
+~~（后续会增加单个账号切换绑定学生的功能）~~
 
 ### 命令行版本
 - 以上除 查看答题卡 外的所有功能
@@ -51,6 +47,4 @@ pip install -r requirements.txt
 
 ### 使用打包后的版本
 
->本项目使用 `auto-py-to-exe` 打包 [*](https://blog.csdn.net/qq_40836442/article/details/139061604)
-
-无需配置环境，下载[releases](https://github.com/z7572/haofenshuPY/releases/)中的exe文件并运行即可
+无需配置环境，下载[releases](https://github.com/z7572/haofenshuPY/releases/)中的exe文件并运行
