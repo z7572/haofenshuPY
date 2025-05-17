@@ -1,4 +1,3 @@
-## v3api失效，v4api解析中
 
 # 坏  分  数 | haofenshuPY
 <p align="center">
